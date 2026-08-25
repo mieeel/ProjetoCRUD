@@ -21,5 +21,7 @@ int atualizar_limite(int id, float novo_limite);
 int deletar_cliente(int id);
 
 void menu();
+void salvar_em_arquivo();
+void carregar_de_arquivo();
 
 #endif

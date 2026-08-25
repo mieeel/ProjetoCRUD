@@ -74,3 +74,31 @@ void menu(){
     printf("5. Sair\n");
     printf("Escolha uma opcao: ");
 }
+void salvar_em_arquivo(){
+    FILE *arquivo = fopen("clientes.txt","w");
+    if(arquivo == NULL){
+        printf("[ERRO] nao foi possivel abrir o arquivo para escrita\n");
+        return;
+    }
+
+    fprint(arquivo, "%d\n", proximo_id);
+    for(int i = 0; i < total_clientes; i++){
+        fprint(arquivo, "%d;%s;%s;%.2f;%d\n", banco_clientes[i].id, banco_clientes[i].nome, banco_clientes[i].cnpj, banco_clientes[i].limite_credito, banco_clientes[i].ativo);
+    }
+
+    fclose(arquivo);
+}
+void carregar_de_arquivo(){
+    FILE *arquivo = fopen("clientes.txt","r");
+    if(arquivo == NULL){
+        return; // arquivo ainda não existe
+    }
+
+    total_clientes = 0;
+
+    if(fscanf(arquivo, "%d\n", &proximo_id) != 1){
+        proximo_id = 1;
+    }
+
+    while(total_clientes < MAX_CLIENTES && fscanf(arquivo, "%d;%59[^;];%19[^;];%f;%d\n"))
+}
