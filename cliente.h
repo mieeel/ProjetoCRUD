@@ -23,5 +23,6 @@ int deletar_cliente(int id);
 void menu();
 void salvar_em_arquivo();
 void carregar_de_arquivo();
+int validar_formato_cnpj(const char *cnpj);
 
 #endif

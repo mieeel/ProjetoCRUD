@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <ctype.h>
 #include "cliente.h"
 
 static Cliente banco_clientes[MAX_CLIENTES];
@@ -12,6 +13,14 @@ void inicializar_sistema(){
     proximo_id = 1;
 }
 int criar_cliente(const char *nome, const char *cnpj, float limite){
+    if(!validar_formato_cnpj(cnpj)){
+        printf("[ERRO] formato de cnpj invalido, use XX.XXX/XXXX-XX\n");
+        return -2; // código de erro de cnpj
+    }
+    if(limite < 0){
+        printf("[ERRO] limite negativo\n");
+        return -3; // código de erro de limite
+    }
     if(total_clientes >= MAX_CLIENTES){
         return -1;
     }
@@ -125,4 +134,21 @@ void carregar_de_arquivo(){
         }
     }
     fclose(arquivo);
+}
+int validar_formato_cnpj(const char *cnpj){
+    if(strlen(cnpj) != 18){
+        return 0; // tam invalido
+    }
+    if(cnpj[2] != '.' || cnpj[6] != '.' || cnpj[10] != '/' || cnpj[15] != '-'){
+        return 0; // pontuacao invalida
+    }
+    int posicoes_numeros[14] = {0, 1, 3, 4, 5, 7, 8, 9, 11, 12, 13, 14, 16, 17};
+    for(int i = 0; i < 14; i++){
+        int pos = posicoes_numeros[i];
+        if(!isdigit(cnpj[pos])){
+            return 0; // nao e digito
+        }
+    }
+
+    return 1; // cnpj valido
 }
