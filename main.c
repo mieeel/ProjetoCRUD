@@ -82,6 +82,7 @@ int main(){
             }
 
         } else if (opcao == 5) {
+            finalizar_sistema();
             printf("Encerrando o sistema...\n");
         } else {
             printf("Opcao invalida. Tente novamente.\n");
