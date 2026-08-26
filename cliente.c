@@ -36,6 +36,7 @@ int criar_cliente(const char *nome, const char *cnpj, float limite){
     banco_clientes[total_clientes] = novo;
     total_clientes++;
 
+    salvar_em_arquivo();
     return novo.id;
 }
 void listar_clientes(){
@@ -63,6 +64,7 @@ int atualizar_limite(int id, float novo_limite){
     Cliente *c = buscar_cliente_por_id(id);
     if(c != NULL){
         c->limite_credito = novo_limite;
+        salvar_em_arquivo();
         return 1; // sucesso
     }
     return 0; // nao encontrado
@@ -71,6 +73,7 @@ int deletar_cliente(int id){
     Cliente *c = buscar_cliente_por_id(id);
     if(c != NULL){
         c->ativo = 0;
+        salvar_em_arquivo();
         return 1; // sucesso
     }
     return 0; // nao encontrado
@@ -91,9 +94,11 @@ void salvar_em_arquivo(){
         return;
     }
 
-    fprint(arquivo, "%d\n", proximo_id);
+    fprintf(arquivo, "%d\n", proximo_id);
     for(int i = 0; i < total_clientes; i++){
-        fprint(arquivo, "%d;%s;%s;%.2f;%d\n", banco_clientes[i].id, banco_clientes[i].nome, banco_clientes[i].cnpj, banco_clientes[i].limite_credito, banco_clientes[i].ativo);
+        if(banco_clientes[i].ativo == 1){
+        fprintf(arquivo, "%d;%s;%s;%.2f;%d\n", banco_clientes[i].id, banco_clientes[i].nome, banco_clientes[i].cnpj, banco_clientes[i].limite_credito, banco_clientes[i].ativo);
+        }
     }
 
     fclose(arquivo);
