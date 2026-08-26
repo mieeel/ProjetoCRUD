@@ -41,9 +41,13 @@ int main(){
             printf("Limite de credito inicial (R$): ");
             scanf("%f", &limite);
 
-            int id = criar_cliente(nome, cnpj, limite);
-            if (id > 0) {
-                printf("[SUCESSO] Cliente cadastrado com ID %d!\n", id);
+            int res = criar_cliente(nome, cnpj, limite);
+            if (res > 0) {
+                printf("[SUCESSO] Cliente cadastrado com ID %d!\n", res);
+            } else if (res == -2) {
+                printf("[FALHA] Cadastro cancelado devido ao CNPJ invalido.\n");
+            } else if (res == -3) {
+                printf("[FALHA] Cadastro cancelado devido ao limite negativo.\n");
             } else {
                 printf("[ERRO] Nao foi possivel cadastrar (capacidade cheia).\n");
             }
