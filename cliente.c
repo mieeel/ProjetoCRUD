@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <string.h>
+#include <stdlib.h>
 #include "cliente.h"
 
 static Cliente banco_clientes[MAX_CLIENTES];
@@ -94,11 +95,34 @@ void carregar_de_arquivo(){
         return; // arquivo ainda não existe
     }
 
+    char linha[256];
+    if(fgets(linha, sizeof(linha), arquivo) != NULL){
+        proximo_id = atoi(linha);
+    }
+    
     total_clientes = 0;
 
-    if(fscanf(arquivo, "%d\n", &proximo_id) != 1){
-        proximo_id = 1;
-    }
+    while(fgets(linha, sizeof(linha), arquivo) != NULL && total_clientes < MAX_CLIENTES){
+        char *str_id = strtok(linha, ";");
+        char *nome = strtok(NULL, ";");
+        char *cnpj = strtok(NULL, ";");
+        char *str_limite = strtok(NULL, ";");
+        char *str_ativo = strtok(NULL, ";\n");
 
-    while(total_clientes < MAX_CLIENTES && fscanf(arquivo, "%d;%59[^;];%19[^;];%f;%d\n"))
+
+        if(str_id && nome && cnpj && str_limite && str_ativo){
+            banco_clientes[total_clientes].id = atoi(str_id);
+            strncpy(banco_clientes[total_clientes].nome, nome, TAM_NOME - 1);
+            banco_clientes[total_clientes].nome[TAM_NOME - 1] = '\0';
+
+            strncpy(banco_clientes[total_clientes].cnpj, cnpj, TAM_CNPJ - 1);
+            banco_clientes[total_clientes].cnpj[TAM_CNPJ - 1] = '\0';
+
+            banco_clientes[total_clientes].limite_credito = atof(str_limite);
+            banco_clientes[total_clientes].ativo = atoi(str_ativo);
+
+            total_clientes++;
+        }
+    }
+    fclose(arquivo);
 }
