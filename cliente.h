@@ -25,4 +25,6 @@ void salvar_em_arquivo();
 void carregar_de_arquivo();
 int validar_formato_cnpj(const char *cnpj);
 
+void finalizar_sistema();
+
 #endif

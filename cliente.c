@@ -4,26 +4,47 @@
 #include <ctype.h>
 #include "cliente.h"
 
-static Cliente banco_clientes[MAX_CLIENTES];
+static Cliente *banco_clientes = NULL;
 static int total_clientes = 0;
+static int capacidade = 2;
 static int proximo_id = 1;
 
 void inicializar_sistema(){
+    capacidade = 2; // inicial
     total_clientes = 0;
     proximo_id = 1;
+
+    banco_clientes = (Cliente *) malloc(capacidade * sizeof(Cliente));
+
+    if(banco_clientes == NULL){
+        printf("[ERRO] falha ao alocar memoria inicial\n");
+        exit(1);
+    }
 }
 int criar_cliente(const char *nome, const char *cnpj, float limite){
     if(!validar_formato_cnpj(cnpj)){
-        printf("[ERRO] formato de cnpj invalido, use XX.XXX/XXXX-XX\n");
+        printf("[ERRO] formato de cnpj invalido, use XX.XXX.XXX/XXXX-XX\n");
         return -2; // código de erro de cnpj
     }
     if(limite < 0){
         printf("[ERRO] limite negativo\n");
         return -3; // código de erro de limite
     }
-    if(total_clientes >= MAX_CLIENTES){
-        return -1;
+    if(total_clientes >= capacidade){
+        capacidade *= 2;
+
+        Cliente *temp = (Cliente *)realloc(banco_clientes, capacidade * sizeof(Cliente));
+
+        if(temp == NULL){
+            printf("[ERRO] falha ao realocar memoria\n");
+            return -1;
+        }
+
+        banco_clientes = temp;
+        printf("[SISTEMA] capacidade de memoria expandida para [%d] clientes\n", capacidade);
     }
+
+
     Cliente novo;
     novo.id = proximo_id++;
     strncpy(novo.nome, nome, TAM_NOME - 1);
@@ -117,6 +138,11 @@ void carregar_de_arquivo(){
     total_clientes = 0;
 
     while(fgets(linha, sizeof(linha), arquivo) != NULL && total_clientes < MAX_CLIENTES){
+        if(total_clientes >= capacidade){
+            capacidade *= 2;
+            banco_clientes = (Cliente *)realloc(banco_clientes, capacidade * sizeof(Cliente));
+        }
+
         char *str_id = strtok(linha, ";");
         char *nome = strtok(NULL, ";");
         char *cnpj = strtok(NULL, ";");
@@ -138,6 +164,7 @@ void carregar_de_arquivo(){
             total_clientes++;
         }
     }
+    
     fclose(arquivo);
 }
 int validar_formato_cnpj(const char *cnpj){
@@ -156,4 +183,10 @@ int validar_formato_cnpj(const char *cnpj){
     }
 
     return 1; // cnpj valido
+}
+void finalizar_sistema(){
+    if(banco_clientes != NULL){
+        free(banco_clientes); // libera RAM
+        banco_clientes = NULL;
+    }
 }
