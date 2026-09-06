@@ -1,4 +1,5 @@
 banco
 banco.exe
 *.o
+*.db
 clientes.txt
