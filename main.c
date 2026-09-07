@@ -8,21 +8,14 @@ void limpar_buffer(){
 }
 
 int main(){
-    inicializar_sistema();
-
-    criar_cliente("Ambev S.A", "07.526.557/0001-00", 5000000.0f);
-    criar_cliente("Vale S.A.", "33.592.510/0001-54", 12000000.0f);
-
+    if (!inicializar_banco()) {
+        printf("Falha ao inicializar banco de dados. Encerrando...\n");
+        return 1;
+    }
     int opcao = 0;
 
     do {
-        printf("\n--- SISTEMA ITAU ATACADO (CRUD) ---\n");
-        printf("1. Cadastrar novo cliente (Create)\n");
-        printf("2. Listar todos os clientes (Read)\n");
-        printf("3. Atualizar limite de credito (Update)\n");
-        printf("4. Excluir cliente (Delete)\n");
-        printf("5. Sair\n");
-        printf("Escolha uma opcao: ");
+        menu();
         
         if (scanf("%d", &opcao) != 1) {
             limpar_buffer();
@@ -49,7 +42,7 @@ int main(){
             } else if (res == -3) {
                 printf("[FALHA] Cadastro cancelado devido ao limite negativo.\n");
             } else {
-                printf("[ERRO] Nao foi possivel cadastrar (capacidade cheia).\n");
+                printf("[ERRO] Falha ao inserir no banco de dados.\n");
             }
 
         } else if (opcao == 2) {
@@ -82,7 +75,7 @@ int main(){
             }
 
         } else if (opcao == 5) {
-            finalizar_sistema();
+            fechar_banco();
             printf("Encerrando o sistema...\n");
         } else {
             printf("Opcao invalida. Tente novamente.\n");

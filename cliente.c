@@ -4,169 +4,8 @@
 #include <ctype.h>
 #include "cliente.h"
 
-static Cliente *banco_clientes = NULL;
-static int total_clientes = 0;
-static int capacidade = 2;
-static int proximo_id = 1;
+static sqlite3 *db = NULL;
 
-void inicializar_sistema(){
-    capacidade = 2; // inicial
-    total_clientes = 0;
-    proximo_id = 1;
-
-    banco_clientes = (Cliente *) malloc(capacidade * sizeof(Cliente));
-
-    if(banco_clientes == NULL){
-        printf("[ERRO] falha ao alocar memoria inicial\n");
-        exit(1);
-    }
-}
-int criar_cliente(const char *nome, const char *cnpj, float limite){
-    if(!validar_formato_cnpj(cnpj)){
-        printf("[ERRO] formato de cnpj invalido, use XX.XXX.XXX/XXXX-XX\n");
-        return -2; // código de erro de cnpj
-    }
-    if(limite < 0){
-        printf("[ERRO] limite negativo\n");
-        return -3; // código de erro de limite
-    }
-    if(total_clientes >= capacidade){
-        capacidade *= 2;
-
-        Cliente *temp = (Cliente *)realloc(banco_clientes, capacidade * sizeof(Cliente));
-
-        if(temp == NULL){
-            printf("[ERRO] falha ao realocar memoria\n");
-            return -1;
-        }
-
-        banco_clientes = temp;
-        printf("[SISTEMA] capacidade de memoria expandida para [%d] clientes\n", capacidade);
-    }
-
-
-    Cliente novo;
-    novo.id = proximo_id++;
-    strncpy(novo.nome, nome, TAM_NOME - 1);
-    novo.nome[TAM_NOME - 1] = '\0';
-    strncpy(novo.cnpj, cnpj, TAM_CNPJ - 1);
-    novo.cnpj[TAM_CNPJ - 1] = '\0';
-    novo.limite_credito = limite;
-    novo.ativo = 1;
-
-    banco_clientes[total_clientes] = novo;
-    total_clientes++;
-
-    salvar_em_arquivo();
-    return novo.id;
-}
-void listar_clientes(){
-    int encontrados = 0;
-    for(int i = 0; i < total_clientes; i++){
-        if(banco_clientes[i].ativo){
-            printf("ID: %d | NOME: %-20s | CNPJ: %-18s | LIMITE: R$%.2f\n", banco_clientes[i].id, banco_clientes[i].nome, banco_clientes[i].cnpj, banco_clientes[i].limite_credito);
-            encontrados++;
-        }
-    }
-    if(encontrados == 0){
-        printf("nenhum cliente ativo cadastrado\n");
-    }
-    printf("\n");
-}
-Cliente* buscar_cliente_por_id(int id){
-    for(int i = 0; i < total_clientes; i++){
-        if(banco_clientes[i].id == id && banco_clientes[i].ativo){
-            return &banco_clientes[i];
-        }
-    }
-    return NULL;
-}
-int atualizar_limite(int id, float novo_limite){
-    Cliente *c = buscar_cliente_por_id(id);
-    if(c != NULL){
-        c->limite_credito = novo_limite;
-        salvar_em_arquivo();
-        return 1; // sucesso
-    }
-    return 0; // nao encontrado
-}
-int deletar_cliente(int id){
-    Cliente *c = buscar_cliente_por_id(id);
-    if(c != NULL){
-        c->ativo = 0;
-        salvar_em_arquivo();
-        return 1; // sucesso
-    }
-    return 0; // nao encontrado
-}
-void menu(){
-    printf("\n--- SISTEMA ITAU ATACADO (CRUD) ---\n");
-    printf("1. Cadastrar novo cliente (Create)\n");
-    printf("2. Listar todos os clientes (Read)\n");
-    printf("3. Atualizar limite de credito (Update)\n");
-    printf("4. Excluir cliente (Delete)\n");
-    printf("5. Sair\n");
-    printf("Escolha uma opcao: ");
-}
-void salvar_em_arquivo(){
-    FILE *arquivo = fopen("clientes.txt","w");
-    if(arquivo == NULL){
-        printf("[ERRO] nao foi possivel abrir o arquivo para escrita\n");
-        return;
-    }
-
-    fprintf(arquivo, "%d\n", proximo_id);
-    for(int i = 0; i < total_clientes; i++){
-        if(banco_clientes[i].ativo == 1){
-        fprintf(arquivo, "%d;%s;%s;%.2f;%d\n", banco_clientes[i].id, banco_clientes[i].nome, banco_clientes[i].cnpj, banco_clientes[i].limite_credito, banco_clientes[i].ativo);
-        }
-    }
-
-    fclose(arquivo);
-}
-void carregar_de_arquivo(){
-    FILE *arquivo = fopen("clientes.txt","r");
-    if(arquivo == NULL){
-        return; // arquivo ainda não existe
-    }
-
-    char linha[256];
-    if(fgets(linha, sizeof(linha), arquivo) != NULL){
-        proximo_id = atoi(linha);
-    }
-    
-    total_clientes = 0;
-
-    while(fgets(linha, sizeof(linha), arquivo) != NULL && total_clientes < MAX_CLIENTES){
-        if(total_clientes >= capacidade){
-            capacidade *= 2;
-            banco_clientes = (Cliente *)realloc(banco_clientes, capacidade * sizeof(Cliente));
-        }
-
-        char *str_id = strtok(linha, ";");
-        char *nome = strtok(NULL, ";");
-        char *cnpj = strtok(NULL, ";");
-        char *str_limite = strtok(NULL, ";");
-        char *str_ativo = strtok(NULL, ";\n");
-
-
-        if(str_id && nome && cnpj && str_limite && str_ativo){
-            banco_clientes[total_clientes].id = atoi(str_id);
-            strncpy(banco_clientes[total_clientes].nome, nome, TAM_NOME - 1);
-            banco_clientes[total_clientes].nome[TAM_NOME - 1] = '\0';
-
-            strncpy(banco_clientes[total_clientes].cnpj, cnpj, TAM_CNPJ - 1);
-            banco_clientes[total_clientes].cnpj[TAM_CNPJ - 1] = '\0';
-
-            banco_clientes[total_clientes].limite_credito = atof(str_limite);
-            banco_clientes[total_clientes].ativo = atoi(str_ativo);
-
-            total_clientes++;
-        }
-    }
-    
-    fclose(arquivo);
-}
 int validar_formato_cnpj(const char *cnpj){
     if(strlen(cnpj) != 18){
         return 0; // tam invalido
@@ -184,9 +23,145 @@ int validar_formato_cnpj(const char *cnpj){
 
     return 1; // cnpj valido
 }
-void finalizar_sistema(){
-    if(banco_clientes != NULL){
-        free(banco_clientes); // libera RAM
-        banco_clientes = NULL;
+
+int inicializar_banco(){
+    // abre ou cria o arquivo "banco_clientes.db"
+    int res = sqlite3_open("banco_clientes.db", &db);
+    if(res != SQLITE_OK){
+        printf("[ERRO] nao foi possivel abrir o banco de dados\n");
+        return 0;
     }
+    // Comando SQL para criar a tabela caso ela não exista
+    const char *sql_create = 
+        "CREATE TABLE IF NOT EXISTS clientes ("
+        "id INTEGER PRIMARY KEY AUTOINCREMENT, "
+        "nome TEXT NOT NULL, "
+        "cnpj TEXT NOT NULL, "
+        "limite_credito REAL NOT NULL);";
+
+    char *err_msg = NULL;
+    res = sqlite3_exec(db, sql_create, 0, 0, &err_msg);
+
+    if(res != SQLITE_OK){
+    printf("[ERRO SQL] erro ao criar tabela: %s\n", err_msg);
+    sqlite3_free(err_msg);
+    return 0;
+    }
+
+    return 1;
+}
+
+void fechar_banco(){
+    if(db != NULL){
+        sqlite3_close(db);
+        db = NULL;
+    }
+}
+
+// CREATE - INSERT INTO
+int criar_cliente(const char *nome, const char *cnpj, float limite){
+    if(!validar_formato_cnpj(cnpj)){
+        printf("[ERRO] formato de cnpj invalido, use XX.XXX.XXX/XXXX-XX\n");
+        return -2; // código de erro de cnpj
+    }
+    if(limite < 0){
+        printf("[ERRO] limite negativo\n");
+        return -3; // código de erro de limite
+    }
+    
+    const char *sql = "INSERT INTO clientes (nome, cnpj, limite_credito) VALUES (?, ?, ?);";
+    sqlite3_stmt *stmt;
+
+    // prepara a instrução sql
+    if(sqlite3_prepare_v2(db, sql, -1, &stmt, 0) != SQLITE_OK){
+        return -1;
+    }
+
+    // associa os parametros com segurança (evita sql injection)
+    sqlite3_bind_text(stmt, 1, nome, -1, SQLITE_STATIC);
+    sqlite3_bind_text(stmt, 2, cnpj, -1, SQLITE_STATIC);
+    sqlite3_bind_double(stmt, 3, limite);
+
+    int status = sqlite3_step(stmt);
+    sqlite3_finalize(stmt);
+
+    if(status == SQLITE_DONE){
+        // retorna o id gerado
+        return (int)sqlite3_last_insert_rowid(db);
+    }
+
+    return -1;
+}
+
+// READ - SELECT
+void listar_clientes(){
+    const char *sql = "SELECT id, nome, cnpj, limite_credito FROM clientes;";
+    sqlite3_stmt *stmt;
+
+    if (sqlite3_prepare_v2(db, sql, -1, &stmt, 0) != SQLITE_OK) {
+        printf("[ERRO SQL] nao foi possivel consultar os clientes\n");
+        return;
+    }
+
+    printf("\n=== LISTA DE CLIENTES (BANCO DE DADOS SQLITE) ===\n");
+    int encontrados = 0;
+
+    // percorre cada linha retornada pela consulta
+    while (sqlite3_step(stmt) == SQLITE_ROW) {
+        int id = sqlite3_column_int(stmt, 0);
+        const unsigned char *nome = sqlite3_column_text(stmt, 1);
+        const unsigned char *cnpj = sqlite3_column_text(stmt, 2);
+        double limite = sqlite3_column_double(stmt, 3);
+
+        printf("ID: %d | Nome: %-20s | CNPJ: %-18s | Limite: R$ %.2f\n", id, nome, cnpj, limite);
+        encontrados++;
+    }
+
+    if (encontrados == 0) {
+        printf("nenhum cliente cadastrado no banco de dados.\n");
+    }
+    printf("==================================================\n");
+
+    sqlite3_finalize(stmt);
+}
+
+int atualizar_limite(int id, float novo_limite) {
+    const char *sql = "UPDATE clientes SET limite_credito = ? WHERE id = ?;";
+    sqlite3_stmt *stmt;
+
+    if (sqlite3_prepare_v2(db, sql, -1, &stmt, 0) != SQLITE_OK) return 0;
+
+    sqlite3_bind_double(stmt, 1, novo_limite);
+    sqlite3_bind_int(stmt, 2, id);
+
+    sqlite3_step(stmt);
+    int alterados = sqlite3_changes(db); // Quantas linhas foram modificadas
+    sqlite3_finalize(stmt);
+
+    return alterados > 0;
+}
+
+int deletar_cliente(int id) {
+    const char *sql = "DELETE FROM clientes WHERE id = ?;";
+    sqlite3_stmt *stmt;
+
+    if (sqlite3_prepare_v2(db, sql, -1, &stmt, 0) != SQLITE_OK) return 0;
+
+    sqlite3_bind_int(stmt, 1, id);
+
+    sqlite3_step(stmt);
+    int alterados = sqlite3_changes(db);
+    sqlite3_finalize(stmt);
+
+    return alterados > 0;
+}
+
+void menu(){
+    printf("\n--- SISTEMA MIGUEL (SQLITE) ---\n");
+    printf("1. Cadastrar novo cliente (Create)\n");
+    printf("2. Listar todos os clientes (Read)\n");
+    printf("3. Atualizar limite de credito (Update)\n");
+    printf("4. Excluir cliente (Delete)\n");
+    printf("5. Sair\n");
+    printf("Escolha uma opcao: ");
 }
